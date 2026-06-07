@@ -1,10 +1,10 @@
-/*
- Name: Princess Ellis
- Date: 2026
- Assignment: SDC320 Course Project
- Description: Represents an adoption transaction.
+/*******************************************************************
+* Name: Princess Ellis
+* Date: June 7, 2026
+* Assignment: SDC320 Week 4 Course Project - Database Implementation
+*
+* Class that represents an adoption transaction.
 */
-
 public class Adoption
 {
     public int AdoptionId { get; set; }

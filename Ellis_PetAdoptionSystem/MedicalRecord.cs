@@ -1,10 +1,10 @@
-/*
- Name: Princess Ellis
- Date: 2026
- Assignment: SDC320 Course Project
- Description: Medical record class used through composition.
+/*******************************************************************
+* Name: Princess Ellis
+* Date: June 7, 2026
+* Assignment: SDC320 Week 4 Course Project - Database Implementation
+*
+* Class that represents a pet's medical record.
 */
-
 public class MedicalRecord
 {
     public int RecordId { get; set; }
@@ -23,6 +23,6 @@ public class MedicalRecord
 
     public override string ToString()
     {
-        return $"Vaccinated: {Vaccinated}, Spayed/Neutered: {SpayedOrNeutered}, Notes: {MedicalNotes}, Last Vet Visit: {LastVetVisit}";
+        return $"Medical Record: Vaccinated: {Vaccinated}, Spayed/Neutered: {SpayedOrNeutered}, Notes: {MedicalNotes}, Last Vet Visit: {LastVetVisit}";
     }
 }

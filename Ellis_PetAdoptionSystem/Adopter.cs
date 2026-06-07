@@ -1,10 +1,10 @@
-/*
- Name: Princess Ellis
- Date: 2026
- Assignment: SDC320 Course Project
- Description: Stores adopter information.
+/*******************************************************************
+* Name: Princess Ellis
+* Date: June 7, 2026
+* Assignment: SDC320 Week 4 Course Project - Database Implementation
+*
+* Class that stores adopter information.
 */
-
 public class Adopter
 {
     public int AdopterId { get; set; }

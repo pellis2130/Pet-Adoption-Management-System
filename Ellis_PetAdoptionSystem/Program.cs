@@ -1,17 +1,20 @@
-﻿/*
- Name: Princess Ellis
- Date: 2026
- Assignment: SDC320 Course Project
- Description: Main console application for the Pet Adoption Management System.
+﻿/*******************************************************************
+* Name: Princess Ellis
+* Date: June 7, 2026
+* Assignment: SDC320 Week 4 Course Project - Database Implementation
+*
+* Main application class for the Pet Adoption Management System.
 */
+using System;
+using System.Collections.Generic;
+using System.Data.SQLite;
 
 public class Program
 {
-    private static PetRepository repository = new PetRepository();
-
     public static void Main(string[] args)
     {
-        repository.InitializeDatabase();
+        SQLiteConnection conn = SQLiteDatabase.Connect("PetAdoption.db");
+        PetRepository.CreateTables(conn);
 
         bool running = true;
 
@@ -20,35 +23,41 @@ public class Program
             ShowMenu();
             string choice = Console.ReadLine() ?? "";
 
-            switch (choice)
+            if (choice == "1")
             {
-                case "1":
-                    AddPet();
-                    break;
-                case "2":
-                    ViewAllPets();
-                    break;
-                case "3":
-                    SearchPet();
-                    break;
-                case "4":
-                    UpdatePet();
-                    break;
-                case "5":
-                    DeletePet();
-                    break;
-                case "6":
-                    DemonstratePolymorphism();
-                    break;
-                case "0":
-                    running = false;
-                    Console.WriteLine("Goodbye!");
-                    break;
-                default:
-                    Console.WriteLine("Invalid choice. Try again.");
-                    break;
+                AddPet(conn);
+            }
+            else if (choice == "2")
+            {
+                ViewAllPets(conn);
+            }
+            else if (choice == "3")
+            {
+                SearchPet(conn);
+            }
+            else if (choice == "4")
+            {
+                UpdatePet(conn);
+            }
+            else if (choice == "5")
+            {
+                DeletePet(conn);
+            }
+            else if (choice == "6")
+            {
+                DemonstratePolymorphism(conn);
+            }
+            else if (choice == "0")
+            {
+                running = false;
+            }
+            else
+            {
+                Console.WriteLine("Invalid option. Please try again.");
             }
         }
+
+        conn.Close();
     }
 
     private static void ShowMenu()
@@ -64,11 +73,12 @@ public class Program
         Console.Write("Choose an option: ");
     }
 
-    private static void AddPet()
+    private static void AddPet(SQLiteConnection conn)
     {
         Console.WriteLine("\n--- Add Pet ---");
+
         Console.Write("Enter pet type (Dog/Cat/Other): ");
-        string type = Console.ReadLine() ?? "";
+        string petType = Console.ReadLine() ?? "";
 
         Console.Write("Name: ");
         string name = Console.ReadLine() ?? "";
@@ -76,43 +86,35 @@ public class Program
         Console.Write("Breed: ");
         string breed = Console.ReadLine() ?? "";
 
-        Console.Write("Age: ");
-        int age = int.Parse(Console.ReadLine() ?? "0");
-
-        Console.Write("Vaccinated? (true/false): ");
-        bool vaccinated = bool.Parse(Console.ReadLine() ?? "false");
-
-        Console.Write("Spayed or Neutered? (true/false): ");
-        bool spayed = bool.Parse(Console.ReadLine() ?? "false");
+        int age = ReadInt("Age: ");
+        bool vaccinated = ReadBool("Vaccinated? (true/false): ");
+        bool spayedOrNeutered = ReadBool("Spayed or Neutered? (true/false): ");
 
         Console.Write("Medical Notes: ");
-        string notes = Console.ReadLine() ?? "";
+        string medicalNotes = Console.ReadLine() ?? "";
 
         Console.Write("Last Vet Visit: ");
-        string lastVet = Console.ReadLine() ?? "";
+        string lastVetVisit = Console.ReadLine() ?? "";
 
-        MedicalRecord record = new MedicalRecord(vaccinated, spayed, notes, lastVet);
+        MedicalRecord medicalRecord = new MedicalRecord(vaccinated, spayedOrNeutered, medicalNotes, lastVetVisit);
+
         Pet pet;
 
-        if (type.Equals("Dog", StringComparison.OrdinalIgnoreCase))
+        if (petType.ToLower() == "dog")
         {
             Console.Write("Energy Level: ");
-            string energy = Console.ReadLine() ?? "";
+            string energyLevel = Console.ReadLine() ?? "";
 
-            Console.Write("Good With Kids? (true/false): ");
-            bool goodWithKids = bool.Parse(Console.ReadLine() ?? "false");
+            bool goodWithKids = ReadBool("Good With Kids? (true/false): ");
 
-            pet = new Dog(0, name, breed, age, "Available", record, energy, goodWithKids);
+            pet = new Dog(0, name, breed, age, "Available", medicalRecord, energyLevel, goodWithKids);
         }
-        else if (type.Equals("Cat", StringComparison.OrdinalIgnoreCase))
+        else if (petType.ToLower() == "cat")
         {
-            Console.Write("Indoor Only? (true/false): ");
-            bool indoorOnly = bool.Parse(Console.ReadLine() ?? "false");
+            bool indoorOnly = ReadBool("Indoor Only? (true/false): ");
+            bool litterTrained = ReadBool("Litter Trained? (true/false): ");
 
-            Console.Write("Litter Trained? (true/false): ");
-            bool litterTrained = bool.Parse(Console.ReadLine() ?? "false");
-
-            pet = new Cat(0, name, breed, age, "Available", record, indoorOnly, litterTrained);
+            pet = new Cat(0, name, breed, age, "Available", medicalRecord, indoorOnly, litterTrained);
         }
         else
         {
@@ -120,20 +122,20 @@ public class Program
             string animalType = Console.ReadLine() ?? "";
 
             Console.Write("Special Care Instructions: ");
-            string care = Console.ReadLine() ?? "";
+            string specialCare = Console.ReadLine() ?? "";
 
-            pet = new OtherPet(0, name, breed, age, "Available", record, animalType, care);
+            pet = new OtherPet(0, name, animalType, breed, age, "Available", medicalRecord, specialCare);
         }
 
-        repository.CreatePet(pet);
+        PetRepository.AddPet(conn, pet);
         Console.WriteLine("Pet added successfully.");
     }
 
-    private static void ViewAllPets()
+    private static void ViewAllPets(SQLiteConnection conn)
     {
         Console.WriteLine("\n--- All Pets ---");
 
-        List<Pet> pets = repository.GetAllPets();
+        List<Pet> pets = PetRepository.GetAllPets(conn);
 
         if (pets.Count == 0)
         {
@@ -143,96 +145,118 @@ public class Program
 
         foreach (Pet pet in pets)
         {
-            PrintPetInfo(pet);
+            Console.WriteLine("--------------------");
+            Console.WriteLine(pet);
         }
     }
 
-    private static void SearchPet()
+    private static void SearchPet(SQLiteConnection conn)
     {
-        Console.Write("\nEnter Pet ID: ");
-        int id = int.Parse(Console.ReadLine() ?? "0");
+        int id = ReadInt("Enter pet ID to search: ");
 
-        Pet? pet = repository.SearchPet(id);
+        Pet? pet = PetRepository.SearchPet(conn, id);
 
         if (pet == null)
         {
-            Console.WriteLine("Pet not found.");
+            Console.WriteLine("Pet was not found.");
         }
         else
         {
-            PrintPetInfo(pet);
+            Console.WriteLine("\n--- Pet Found ---");
+            Console.WriteLine(pet);
         }
     }
 
-    private static void UpdatePet()
+    private static void UpdatePet(SQLiteConnection conn)
     {
-        Console.Write("\nEnter Pet ID to update: ");
-        int id = int.Parse(Console.ReadLine() ?? "0");
+        int id = ReadInt("Enter pet ID to update: ");
 
-        Pet? pet = repository.SearchPet(id);
+        Pet? pet = PetRepository.SearchPet(conn, id);
 
         if (pet == null)
         {
-            Console.WriteLine("Pet not found.");
+            Console.WriteLine("Pet was not found.");
             return;
         }
 
-        Console.Write("New Name: ");
+        Console.Write("New name: ");
         pet.Name = Console.ReadLine() ?? pet.Name;
 
-        Console.Write("New Breed: ");
-        pet.Breed = Console.ReadLine() ?? pet.Breed;
+        Console.Write("New adoption status: ");
+        pet.AdoptionStatus = Console.ReadLine() ?? pet.AdoptionStatus;
 
-        Console.Write("New Age: ");
-        pet.Age = int.Parse(Console.ReadLine() ?? pet.Age.ToString());
+        Console.Write("New medical notes: ");
+        pet.MedicalRecord.MedicalNotes = Console.ReadLine() ?? pet.MedicalRecord.MedicalNotes;
 
-        Console.Write("New Status (Available/Pending/Adopted): ");
-        pet.UpdateStatus(Console.ReadLine() ?? pet.AdoptionStatus);
-
-        repository.UpdatePet(pet);
+        PetRepository.UpdatePet(conn, pet);
         Console.WriteLine("Pet updated successfully.");
     }
 
-    private static void DeletePet()
+    private static void DeletePet(SQLiteConnection conn)
     {
-        Console.Write("\nEnter Pet ID to delete: ");
-        int id = int.Parse(Console.ReadLine() ?? "0");
+        int id = ReadInt("Enter pet ID to delete: ");
 
-        repository.DeletePet(id);
+        PetRepository.DeletePet(conn, id);
         Console.WriteLine("Pet deleted successfully.");
     }
 
-    private static void DemonstratePolymorphism()
+    private static void DemonstratePolymorphism(SQLiteConnection conn)
     {
         Console.WriteLine("\n--- Polymorphism Demo ---");
 
-        List<Pet> pets = repository.GetAllPets();
+        List<Pet> pets = PetRepository.GetAllPets(conn);
 
         foreach (Pet pet in pets)
         {
-            Console.WriteLine($"{pet.Name} is handled as a Pet object. Pet Type: {pet.GetPetType()}");
+            Console.WriteLine($"{pet.Name} is handled as a Pet object. Pet type: {pet.GetPetType()}");
         }
 
-        Console.WriteLine("\n--- Interface Demo ---");
+        List<IAdoptable> adoptables = new List<IAdoptable>();
 
         foreach (Pet pet in pets)
         {
-            if (pet is IAdoptable adoptable)
+            adoptables.Add(pet);
+        }
+
+        foreach (IAdoptable adoptable in adoptables)
+        {
+            Console.WriteLine("Adoption Status: " + adoptable.GetAdoptionStatus());
+        }
+    }
+
+    private static int ReadInt(string prompt)
+    {
+        int value;
+
+        while (true)
+        {
+            Console.Write(prompt);
+            string input = Console.ReadLine() ?? "";
+
+            if (int.TryParse(input, out value))
             {
-                PrintAdoptableInfo(adoptable);
+                return value;
             }
+
+            Console.WriteLine("Please enter a valid number.");
         }
     }
 
-    private static void PrintPetInfo(Pet pet)
+    private static bool ReadBool(string prompt)
     {
-        Console.WriteLine("\n-------------------------");
-        Console.WriteLine(pet);
-        Console.WriteLine("-------------------------");
-    }
+        bool value;
 
-    private static void PrintAdoptableInfo(IAdoptable adoptable)
-    {
-        Console.WriteLine($"Adoption Status: {adoptable.GetAdoptionStatus()}");
+        while (true)
+        {
+            Console.Write(prompt);
+            string input = Console.ReadLine() ?? "";
+
+            if (bool.TryParse(input, out value))
+            {
+                return value;
+            }
+
+            Console.WriteLine("Please enter true or false.");
+        }
     }
 }

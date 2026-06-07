@@ -1,11 +1,11 @@
-/*
- Name: Princess Ellis
- Date: 2026
- Assignment: SDC320 Course Project
- Description: Cat class derived from Pet and implementing IAdoptable.
+/*******************************************************************
+* Name: Princess Ellis
+* Date: June 7, 2026
+* Assignment: SDC320 Week 4 Course Project - Database Implementation
+*
+* Cat class that inherits from Pet and demonstrates polymorphism.
 */
-
-public class Cat : Pet, IAdoptable
+public class Cat : Pet
 {
     public bool IndoorOnly { get; set; }
     public bool LitterTrained { get; set; }
@@ -25,21 +25,6 @@ public class Cat : Pet, IAdoptable
     public string MakeSound()
     {
         return "Meow!";
-    }
-
-    public string GetAdoptionStatus()
-    {
-        return AdoptionStatus;
-    }
-
-    public void MarkAdopted()
-    {
-        UpdateStatus("Adopted");
-    }
-
-    public void MarkAvailable()
-    {
-        UpdateStatus("Available");
     }
 
     public override string ToString()

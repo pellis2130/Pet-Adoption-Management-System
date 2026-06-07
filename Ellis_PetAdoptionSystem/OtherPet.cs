@@ -1,16 +1,16 @@
-/*
- Name: Princess Ellis
- Date: 2026
- Assignment: SDC320 Course Project
- Description: OtherPet class for pets that are not dogs or cats.
+/*******************************************************************
+* Name: Princess Ellis
+* Date: June 7, 2026
+* Assignment: SDC320 Week 4 Course Project - Database Implementation
+*
+* OtherPet class for animals that are not dogs or cats.
 */
-
-public class OtherPet : Pet, IAdoptable
+public class OtherPet : Pet
 {
     public string AnimalType { get; set; }
     public string SpecialCareInstructions { get; set; }
 
-    public OtherPet(int petId, string name, string breed, int age, string adoptionStatus, MedicalRecord medicalRecord, string animalType, string specialCareInstructions)
+    public OtherPet(int petId, string name, string animalType, string breed, int age, string adoptionStatus, MedicalRecord medicalRecord, string specialCareInstructions)
         : base(petId, name, "Other", breed, age, adoptionStatus, medicalRecord)
     {
         AnimalType = animalType;
@@ -19,22 +19,7 @@ public class OtherPet : Pet, IAdoptable
 
     public override string GetPetType()
     {
-        return AnimalType;
-    }
-
-    public string GetAdoptionStatus()
-    {
-        return AdoptionStatus;
-    }
-
-    public void MarkAdopted()
-    {
-        UpdateStatus("Adopted");
-    }
-
-    public void MarkAvailable()
-    {
-        UpdateStatus("Available");
+        return "Other";
     }
 
     public override string ToString()

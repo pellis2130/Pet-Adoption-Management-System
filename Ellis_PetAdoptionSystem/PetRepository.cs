@@ -1,201 +1,193 @@
-/*
- Name: Princess Ellis
- Date: 2026
- Assignment: SDC320 Course Project
- Description: Handles SQLite CRUD operations for pets.
+/*******************************************************************
+* Name: Princess Ellis
+* Date: June 7, 2026
+* Assignment: SDC320 Week 4 Course Project - Database Implementation
+*
+* Repository class that creates tables and performs CRUD operations.
 */
-
-using Microsoft.Data.Sqlite;
+using System.Collections.Generic;
+using System.Data.SQLite;
 
 public class PetRepository
 {
-    private readonly string _connectionString = "Data Source=PetAdoption.db";
-
-    public void InitializeDatabase()
+    public static void CreateTables(SQLiteConnection conn)
     {
-        using SqliteConnection connection = new SqliteConnection(_connectionString);
-        connection.Open();
+        string petsSql =
+            "CREATE TABLE IF NOT EXISTS Pets (" +
+            "PetId INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "Name TEXT NOT NULL, " +
+            "Species TEXT NOT NULL, " +
+            "Breed TEXT, " +
+            "Age INTEGER, " +
+            "AdoptionStatus TEXT NOT NULL, " +
+            "PetType TEXT NOT NULL);";
 
-        string createPetsTable = @"
-            CREATE TABLE IF NOT EXISTS Pets (
-                PetId INTEGER PRIMARY KEY AUTOINCREMENT,
-                Name TEXT NOT NULL,
-                Species TEXT NOT NULL,
-                Breed TEXT,
-                Age INTEGER,
-                AdoptionStatus TEXT NOT NULL,
-                PetType TEXT NOT NULL,
-                ExtraInfo1 TEXT,
-                ExtraInfo2 TEXT
-            );";
+        string medicalSql =
+            "CREATE TABLE IF NOT EXISTS MedicalRecords (" +
+            "RecordId INTEGER PRIMARY KEY AUTOINCREMENT, " +
+            "PetId INTEGER NOT NULL, " +
+            "Vaccinated INTEGER NOT NULL, " +
+            "SpayedOrNeutered INTEGER NOT NULL, " +
+            "MedicalNotes TEXT, " +
+            "LastVetVisit TEXT);";
 
-        string createMedicalTable = @"
-            CREATE TABLE IF NOT EXISTS MedicalRecords (
-                RecordId INTEGER PRIMARY KEY AUTOINCREMENT,
-                PetId INTEGER NOT NULL,
-                Vaccinated INTEGER NOT NULL,
-                SpayedOrNeutered INTEGER NOT NULL,
-                MedicalNotes TEXT,
-                LastVetVisit TEXT
-            );";
+        SQLiteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = petsSql;
+        cmd.ExecuteNonQuery();
 
-        using SqliteCommand command1 = new SqliteCommand(createPetsTable, connection);
-        command1.ExecuteNonQuery();
-
-        using SqliteCommand command2 = new SqliteCommand(createMedicalTable, connection);
-        command2.ExecuteNonQuery();
+        cmd.CommandText = medicalSql;
+        cmd.ExecuteNonQuery();
     }
 
-    public void CreatePet(Pet pet)
+    public static void AddPet(SQLiteConnection conn, Pet pet)
     {
-        using SqliteConnection connection = new SqliteConnection(_connectionString);
-        connection.Open();
+        string petSql =
+            "INSERT INTO Pets(Name, Species, Breed, Age, AdoptionStatus, PetType) " +
+            "VALUES(@Name, @Species, @Breed, @Age, @AdoptionStatus, @PetType);";
 
-        string extraInfo1 = "";
-        string extraInfo2 = "";
+        SQLiteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = petSql;
+        cmd.Parameters.AddWithValue("@Name", pet.Name);
+        cmd.Parameters.AddWithValue("@Species", pet.Species);
+        cmd.Parameters.AddWithValue("@Breed", pet.Breed);
+        cmd.Parameters.AddWithValue("@Age", pet.Age);
+        cmd.Parameters.AddWithValue("@AdoptionStatus", pet.AdoptionStatus);
+        cmd.Parameters.AddWithValue("@PetType", pet.GetPetType());
+        cmd.ExecuteNonQuery();
 
-        if (pet is Dog dog)
-        {
-            extraInfo1 = dog.EnergyLevel;
-            extraInfo2 = dog.GoodWithKids.ToString();
-        }
-        else if (pet is Cat cat)
-        {
-            extraInfo1 = cat.IndoorOnly.ToString();
-            extraInfo2 = cat.LitterTrained.ToString();
-        }
-        else if (pet is OtherPet other)
-        {
-            extraInfo1 = other.AnimalType;
-            extraInfo2 = other.SpecialCareInstructions;
-        }
+        long petId = conn.LastInsertRowId;
 
-        string insertPet = @"
-            INSERT INTO Pets (Name, Species, Breed, Age, AdoptionStatus, PetType, ExtraInfo1, ExtraInfo2)
-            VALUES (@Name, @Species, @Breed, @Age, @AdoptionStatus, @PetType, @ExtraInfo1, @ExtraInfo2);
-            SELECT last_insert_rowid();";
+        string medicalSql =
+            "INSERT INTO MedicalRecords(PetId, Vaccinated, SpayedOrNeutered, MedicalNotes, LastVetVisit) " +
+            "VALUES(@PetId, @Vaccinated, @SpayedOrNeutered, @MedicalNotes, @LastVetVisit);";
 
-        using SqliteCommand command = new SqliteCommand(insertPet, connection);
-        command.Parameters.AddWithValue("@Name", pet.Name);
-        command.Parameters.AddWithValue("@Species", pet.Species);
-        command.Parameters.AddWithValue("@Breed", pet.Breed);
-        command.Parameters.AddWithValue("@Age", pet.Age);
-        command.Parameters.AddWithValue("@AdoptionStatus", pet.AdoptionStatus);
-        command.Parameters.AddWithValue("@PetType", pet.GetPetType());
-        command.Parameters.AddWithValue("@ExtraInfo1", extraInfo1);
-        command.Parameters.AddWithValue("@ExtraInfo2", extraInfo2);
-
-        long newPetId = (long)command.ExecuteScalar()!;
-
-        string insertMedical = @"
-            INSERT INTO MedicalRecords (PetId, Vaccinated, SpayedOrNeutered, MedicalNotes, LastVetVisit)
-            VALUES (@PetId, @Vaccinated, @SpayedOrNeutered, @MedicalNotes, @LastVetVisit);";
-
-        using SqliteCommand medicalCommand = new SqliteCommand(insertMedical, connection);
-        medicalCommand.Parameters.AddWithValue("@PetId", newPetId);
-        medicalCommand.Parameters.AddWithValue("@Vaccinated", pet.MedicalRecord.Vaccinated ? 1 : 0);
-        medicalCommand.Parameters.AddWithValue("@SpayedOrNeutered", pet.MedicalRecord.SpayedOrNeutered ? 1 : 0);
-        medicalCommand.Parameters.AddWithValue("@MedicalNotes", pet.MedicalRecord.MedicalNotes);
-        medicalCommand.Parameters.AddWithValue("@LastVetVisit", pet.MedicalRecord.LastVetVisit);
-        medicalCommand.ExecuteNonQuery();
+        cmd = conn.CreateCommand();
+        cmd.CommandText = medicalSql;
+        cmd.Parameters.AddWithValue("@PetId", petId);
+        cmd.Parameters.AddWithValue("@Vaccinated", pet.MedicalRecord.Vaccinated ? 1 : 0);
+        cmd.Parameters.AddWithValue("@SpayedOrNeutered", pet.MedicalRecord.SpayedOrNeutered ? 1 : 0);
+        cmd.Parameters.AddWithValue("@MedicalNotes", pet.MedicalRecord.MedicalNotes);
+        cmd.Parameters.AddWithValue("@LastVetVisit", pet.MedicalRecord.LastVetVisit);
+        cmd.ExecuteNonQuery();
     }
 
-    public List<Pet> GetAllPets()
+    public static List<Pet> GetAllPets(SQLiteConnection conn)
     {
         List<Pet> pets = new List<Pet>();
 
-        using SqliteConnection connection = new SqliteConnection(_connectionString);
-        connection.Open();
+        string sql =
+            "SELECT p.PetId, p.Name, p.Species, p.Breed, p.Age, p.AdoptionStatus, p.PetType, " +
+            "m.Vaccinated, m.SpayedOrNeutered, m.MedicalNotes, m.LastVetVisit " +
+            "FROM Pets p LEFT JOIN MedicalRecords m ON p.PetId = m.PetId;";
 
-        string selectQuery = @"
-            SELECT p.PetId, p.Name, p.Species, p.Breed, p.Age, p.AdoptionStatus, p.PetType, p.ExtraInfo1, p.ExtraInfo2,
-                   m.Vaccinated, m.SpayedOrNeutered, m.MedicalNotes, m.LastVetVisit
-            FROM Pets p
-            LEFT JOIN MedicalRecords m ON p.PetId = m.PetId;";
+        SQLiteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
 
-        using SqliteCommand command = new SqliteCommand(selectQuery, connection);
-        using SqliteDataReader reader = command.ExecuteReader();
+        SQLiteDataReader rdr = cmd.ExecuteReader();
 
-        while (reader.Read())
+        while (rdr.Read())
         {
-            int petId = reader.GetInt32(0);
-            string name = reader.GetString(1);
-            string species = reader.GetString(2);
-            string breed = reader.GetString(3);
-            int age = reader.GetInt32(4);
-            string status = reader.GetString(5);
-            string petType = reader.GetString(6);
-            string extra1 = reader.IsDBNull(7) ? "" : reader.GetString(7);
-            string extra2 = reader.IsDBNull(8) ? "" : reader.GetString(8);
-
-            bool vaccinated = !reader.IsDBNull(9) && reader.GetInt32(9) == 1;
-            bool spayed = !reader.IsDBNull(10) && reader.GetInt32(10) == 1;
-            string notes = reader.IsDBNull(11) ? "" : reader.GetString(11);
-            string lastVet = reader.IsDBNull(12) ? "" : reader.GetString(12);
-
-            MedicalRecord record = new MedicalRecord(vaccinated, spayed, notes, lastVet);
-
-            Pet pet;
-
-            if (species == "Dog")
-            {
-                pet = new Dog(petId, name, breed, age, status, record, extra1, bool.Parse(extra2));
-            }
-            else if (species == "Cat")
-            {
-                pet = new Cat(petId, name, breed, age, status, record, bool.Parse(extra1), bool.Parse(extra2));
-            }
-            else
-            {
-                pet = new OtherPet(petId, name, breed, age, status, record, petType, extra2);
-            }
-
-            pets.Add(pet);
+            pets.Add(BuildPetFromReader(rdr));
         }
 
         return pets;
     }
 
-    public Pet? SearchPet(int petId)
+    public static Pet? SearchPet(SQLiteConnection conn, int petId)
     {
-        return GetAllPets().FirstOrDefault(p => p.PetId == petId);
+        string sql =
+            "SELECT p.PetId, p.Name, p.Species, p.Breed, p.Age, p.AdoptionStatus, p.PetType, " +
+            "m.Vaccinated, m.SpayedOrNeutered, m.MedicalNotes, m.LastVetVisit " +
+            "FROM Pets p LEFT JOIN MedicalRecords m ON p.PetId = m.PetId " +
+            "WHERE p.PetId = @PetId;";
+
+        SQLiteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.Parameters.AddWithValue("@PetId", petId);
+
+        SQLiteDataReader rdr = cmd.ExecuteReader();
+
+        if (rdr.Read())
+        {
+            return BuildPetFromReader(rdr);
+        }
+
+        return null;
     }
 
-    public void UpdatePet(Pet pet)
+    public static void UpdatePet(SQLiteConnection conn, Pet pet)
     {
-        using SqliteConnection connection = new SqliteConnection(_connectionString);
-        connection.Open();
+        string petSql =
+            "UPDATE Pets SET Name=@Name, Species=@Species, Breed=@Breed, Age=@Age, " +
+            "AdoptionStatus=@AdoptionStatus, PetType=@PetType WHERE PetId=@PetId;";
 
-        string updateQuery = @"
-            UPDATE Pets
-            SET Name = @Name,
-                Breed = @Breed,
-                Age = @Age,
-                AdoptionStatus = @AdoptionStatus
-            WHERE PetId = @PetId;";
+        SQLiteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = petSql;
+        cmd.Parameters.AddWithValue("@Name", pet.Name);
+        cmd.Parameters.AddWithValue("@Species", pet.Species);
+        cmd.Parameters.AddWithValue("@Breed", pet.Breed);
+        cmd.Parameters.AddWithValue("@Age", pet.Age);
+        cmd.Parameters.AddWithValue("@AdoptionStatus", pet.AdoptionStatus);
+        cmd.Parameters.AddWithValue("@PetType", pet.GetPetType());
+        cmd.Parameters.AddWithValue("@PetId", pet.PetId);
+        cmd.ExecuteNonQuery();
 
-        using SqliteCommand command = new SqliteCommand(updateQuery, connection);
-        command.Parameters.AddWithValue("@Name", pet.Name);
-        command.Parameters.AddWithValue("@Breed", pet.Breed);
-        command.Parameters.AddWithValue("@Age", pet.Age);
-        command.Parameters.AddWithValue("@AdoptionStatus", pet.AdoptionStatus);
-        command.Parameters.AddWithValue("@PetId", pet.PetId);
-        command.ExecuteNonQuery();
+        string medicalSql =
+            "UPDATE MedicalRecords SET Vaccinated=@Vaccinated, SpayedOrNeutered=@SpayedOrNeutered, " +
+            "MedicalNotes=@MedicalNotes, LastVetVisit=@LastVetVisit WHERE PetId=@PetId;";
+
+        cmd = conn.CreateCommand();
+        cmd.CommandText = medicalSql;
+        cmd.Parameters.AddWithValue("@Vaccinated", pet.MedicalRecord.Vaccinated ? 1 : 0);
+        cmd.Parameters.AddWithValue("@SpayedOrNeutered", pet.MedicalRecord.SpayedOrNeutered ? 1 : 0);
+        cmd.Parameters.AddWithValue("@MedicalNotes", pet.MedicalRecord.MedicalNotes);
+        cmd.Parameters.AddWithValue("@LastVetVisit", pet.MedicalRecord.LastVetVisit);
+        cmd.Parameters.AddWithValue("@PetId", pet.PetId);
+        cmd.ExecuteNonQuery();
     }
 
-    public void DeletePet(int petId)
+    public static void DeletePet(SQLiteConnection conn, int petId)
     {
-        using SqliteConnection connection = new SqliteConnection(_connectionString);
-        connection.Open();
+        SQLiteCommand cmd = conn.CreateCommand();
 
-        string deleteMedical = "DELETE FROM MedicalRecords WHERE PetId = @PetId;";
-        using SqliteCommand medicalCommand = new SqliteCommand(deleteMedical, connection);
-        medicalCommand.Parameters.AddWithValue("@PetId", petId);
-        medicalCommand.ExecuteNonQuery();
+        cmd.CommandText = "DELETE FROM MedicalRecords WHERE PetId=@PetId;";
+        cmd.Parameters.AddWithValue("@PetId", petId);
+        cmd.ExecuteNonQuery();
 
-        string deletePet = "DELETE FROM Pets WHERE PetId = @PetId;";
-        using SqliteCommand petCommand = new SqliteCommand(deletePet, connection);
-        petCommand.Parameters.AddWithValue("@PetId", petId);
-        petCommand.ExecuteNonQuery();
+        cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM Pets WHERE PetId=@PetId;";
+        cmd.Parameters.AddWithValue("@PetId", petId);
+        cmd.ExecuteNonQuery();
+    }
+
+    private static Pet BuildPetFromReader(SQLiteDataReader rdr)
+    {
+        int id = rdr.GetInt32(0);
+        string name = rdr.GetString(1);
+        string species = rdr.GetString(2);
+        string breed = rdr.GetString(3);
+        int age = rdr.GetInt32(4);
+        string status = rdr.GetString(5);
+        string petType = rdr.GetString(6);
+
+        MedicalRecord record = new MedicalRecord(
+            rdr.GetInt32(7) == 1,
+            rdr.GetInt32(8) == 1,
+            rdr.GetString(9),
+            rdr.GetString(10)
+        );
+
+        if (petType == "Dog")
+        {
+            return new Dog(id, name, breed, age, status, record, "Medium", true);
+        }
+        else if (petType == "Cat")
+        {
+            return new Cat(id, name, breed, age, status, record, true, true);
+        }
+        else
+        {
+            return new OtherPet(id, name, species, breed, age, status, record, "Special care may be required.");
+        }
     }
 }
