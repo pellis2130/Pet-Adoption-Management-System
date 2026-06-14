@@ -68,9 +68,9 @@ This project helped me practice designing and building a complete C# application
 
 ## Screen Recording
 
-YouTube Video Link: PASTE YOUR VIDEO LINK HERE
+YouTube Video Link: https://youtu.be/J_jsaq6peNQ 
 
 ## Repository Link
 
-GitHub Repository: PASTE YOUR GITHUB LINK HERE
+GitHub Repository: https://github.com/pellis2130/Pet-Adoption-Management-System.git 
 
